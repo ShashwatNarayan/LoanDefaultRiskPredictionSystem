@@ -1,7 +1,5 @@
 """
-=============================================================
 STAGE 4 — SHAP Explainability
-=============================================================
 Goal: Explain WHY the XGBoost model makes each prediction.
 
 SHAP (SHapley Additive exPlanations) answers:
@@ -12,8 +10,6 @@ SHAP (SHapley Additive exPlanations) answers:
 This is the most resume-differentiating stage.
 Banks legally must justify credit decisions — SHAP is how.
 
-Run AFTER train.py
-=============================================================
 """
 
 import pandas as pd
@@ -27,9 +23,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# ─────────────────────────────────────────
 # SETUP
-# ─────────────────────────────────────────
 
 BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH   = os.path.join(BASE_DIR, "data/processed/stage2_features.csv")
@@ -44,15 +38,12 @@ print("=" * 55)
 print("STAGE 4: SHAP EXPLAINABILITY")
 print("=" * 55)
 
-
-# ─────────────────────────────────────────
 # STEP 1: LOAD MODEL & DATA
-# ─────────────────────────────────────────
 # We load the saved XGBoost model and a sample of the
 # feature data. SHAP on 133k rows is slow, so we use
 # a representative 2,000-row sample for global plots.
 
-print("\n📂 Loading model and data...")
+print("\nLoading model and data...")
 
 with open(os.path.join(MODELS_DIR, "xgboost_model.pkl"), "rb") as f:
     model = pickle.load(f)
@@ -74,14 +65,11 @@ sample_idx  = np.random.choice(len(X), size=2000, replace=False)
 X_sample    = X.iloc[sample_idx].reset_index(drop=True)
 y_sample    = y.iloc[sample_idx].reset_index(drop=True)
 
-print(f"✅ Model loaded")
-print(f"✅ Data loaded: {X.shape[0]:,} rows, using 2,000-row sample for SHAP")
-print(f"   Optimal threshold: {optimal_threshold:.3f}")
+print(f"Model loaded")
+print(f"Data loaded: {X.shape[0]:,} rows, using 2,000-row sample for SHAP")
+print(f"Optimal threshold: {optimal_threshold:.3f}")
 
-
-# ─────────────────────────────────────────
 # STEP 2: COMPUTE SHAP VALUES
-# ─────────────────────────────────────────
 # TreeExplainer is optimised for tree-based models.
 # It computes exact SHAP values (not approximations).
 #
@@ -100,14 +88,11 @@ shap_values = explainer.shap_values(X_sample)
 
 # For binary classification XGBoost returns a single array
 # shap_values shape: (n_samples, n_features)
-print(f"✅ SHAP values computed")
-print(f"   Shape: {shap_values.shape}")
-print(f"   Base value (avg model output): {explainer.expected_value:.4f}")
+print(f"SHAP values computed")
+print(f"Shape: {shap_values.shape}")
+print(f"Base value (avg model output): {explainer.expected_value:.4f}")
 
-
-# ─────────────────────────────────────────
 # STEP 3: GLOBAL SUMMARY PLOT
-# ─────────────────────────────────────────
 # The beeswarm plot is the most information-dense SHAP chart.
 # Each dot = one borrower.
 # X position = SHAP value (impact on prediction)
@@ -136,12 +121,9 @@ plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "11_shap_summary_beeswarm.png"),
             dpi=150, bbox_inches="tight")
 plt.close()
-print("✅ Saved: 11_shap_summary_beeswarm.png")
+print("Saved: 11_shap_summary_beeswarm.png")
 
-
-# ─────────────────────────────────────────
 # STEP 4: SHAP BAR PLOT (Mean Absolute Impact)
-# ─────────────────────────────────────────
 # Simpler than beeswarm — shows average magnitude of
 # each feature's impact across all borrowers.
 # This is the clearest chart for a README or presentation.
@@ -168,12 +150,9 @@ plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "12_shap_bar_global.png"),
             dpi=150, bbox_inches="tight")
 plt.close()
-print("✅ Saved: 12_shap_bar_global.png")
+print("Saved: 12_shap_bar_global.png")
 
-
-# ─────────────────────────────────────────
 # STEP 5: SHAP DEPENDENCE PLOTS
-# ─────────────────────────────────────────
 # Shows HOW a feature affects default risk as its
 # value changes. Captures non-linear effects that
 # correlation analysis misses.
@@ -203,12 +182,9 @@ plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "13_shap_dependence_plots.png"),
             dpi=150, bbox_inches="tight")
 plt.close()
-print(f"✅ Saved: 13_shap_dependence_plots.png  (features: {top3})")
+print(f"Saved: 13_shap_dependence_plots.png  (features: {top3})")
 
-
-# ─────────────────────────────────────────
 # STEP 6: INDIVIDUAL BORROWER EXPLANATIONS
-# ─────────────────────────────────────────
 # This is the most powerful part for interviews.
 # We explain individual predictions — this is exactly
 # what a bank would show a loan officer.
@@ -261,10 +237,7 @@ for label, idx in borrowers.items():
         direction = "↑ INCREASES" if row["shap_value"] > 0 else "↓ DECREASES"
         print(f"     {direction} risk | {row['feature']:<30} = {row['feature_value']:.3f}  (SHAP: {row['shap_value']:+.4f})")
 
-
-# ─────────────────────────────────────────
 # STEP 7: WATERFALL PLOTS FOR EACH BORROWER
-# ─────────────────────────────────────────
 # Waterfall shows how each feature pushes the prediction
 # from the base rate to the final score.
 # Red bars = increase default risk
@@ -326,10 +299,7 @@ for label, idx in borrowers.items():
     plt.close()
     print(f"✅ Saved: {fname}")
 
-
-# ─────────────────────────────────────────
 # STEP 8: SHAP INSIGHTS REPORT
-# ─────────────────────────────────────────
 # This is the "What the model learned" section
 # mentioned earlier — the part that gets you
 # remembered in interviews.
@@ -355,10 +325,10 @@ insights_df = pd.DataFrame({
 
 report_path = os.path.join(REPORTS_DIR, "shap_feature_insights.csv")
 insights_df.to_csv(report_path, index=False)
-print(f"✅ Saved: outputs/reports/shap_feature_insights.csv")
+print(f"Saved: outputs/reports/shap_feature_insights.csv")
 
 # Print human-readable summary
-print("\n📋 TOP RISK INSIGHTS (for your README):")
+print("\nTOP RISK INSIGHTS (for your README):")
 print("─" * 55)
 top5 = insights_df.head(5)
 for _, row in top5.iterrows():
@@ -369,9 +339,7 @@ for _, row in top5.iterrows():
     print()
 
 
-# ─────────────────────────────────────────
 # STEP 9: DECISION SIMULATOR
-# ─────────────────────────────────────────
 # Simulates the full prediction pipeline on a
 # hypothetical new borrower. This demonstrates
 # the end-to-end system in your README/interviews.
@@ -425,7 +393,7 @@ for _, row in contrib.iterrows():
 
 
 print("\n" + "=" * 55)
-print("✅ STAGE 4 COMPLETE")
+print("STAGE 4 COMPLETE")
 print("=" * 55)
 print("""
 Outputs saved:

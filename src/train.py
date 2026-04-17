@@ -1,13 +1,11 @@
 """
-=============================================================
 STAGE 3 (IMPROVED) — Model Training & Evaluation
-=============================================================
+
 Key improvements over v1:
   1. Threshold tuning for XGBoost (fixes low recall)
   2. Stronger XGBoost hyperparameters
   3. Precision-Recall curve to find optimal threshold
   4. Cross-validation for reliable AUC estimate
-=============================================================
 """
 
 import pandas as pd
@@ -31,9 +29,7 @@ from xgboost import XGBClassifier
 
 warnings.filterwarnings("ignore")
 
-# ─────────────────────────────────────────
 # SETUP
-# ─────────────────────────────────────────
 
 BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_PATH  = os.path.join(BASE_DIR, "data/processed/stage2_features.csv")
@@ -48,14 +44,11 @@ print("=" * 55)
 print("STAGE 3 (IMPROVED): MODEL TRAINING & EVALUATION")
 print("=" * 55)
 
-
-# ─────────────────────────────────────────
 # STEP 1: LOAD & SPLIT
-# ─────────────────────────────────────────
 
-print("\n📂 Loading stage2_features.csv ...")
+print("\nLoading stage2_features.csv ...")
 df = pd.read_csv(INPUT_PATH)
-print(f"✅ Loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
+print(f"Loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
 
 X = df.drop(columns=["target"])
 y = df["target"]
@@ -63,13 +56,11 @@ y = df["target"]
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
-print(f"\n📊 Train: {X_train.shape[0]:,}  |  Test: {X_test.shape[0]:,}")
+print(f"\nTrain: {X_train.shape[0]:,}  |  Test: {X_test.shape[0]:,}")
 print(f"   Default rate — Train: {y_train.mean():.1%}  |  Test: {y_test.mean():.1%}")
 
 
-# ─────────────────────────────────────────
 # STEP 2: SMOTE
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 2: SMOTE RESAMPLING")
@@ -80,9 +71,7 @@ X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
 print(f"After SMOTE — each class: {(y_train_res == 0).sum():,} rows")
 
 
-# ─────────────────────────────────────────
 # STEP 3: FEATURE SCALING
-# ─────────────────────────────────────────
 
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train_res)
@@ -91,33 +80,31 @@ X_test_scaled  = scaler.transform(X_test)
 scaler_path = os.path.join(MODELS_DIR, "scaler.pkl")
 with open(scaler_path, "wb") as f:
     pickle.dump(scaler, f)
-print(f"\n✅ Scaler saved")
+print(f"\nScaler saved")
 
 
-# ─────────────────────────────────────────
 # STEP 4: TRAIN MODELS
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 4: TRAINING MODELS")
 print("=" * 55)
 
-# ── Logistic Regression ──────────────────
+# Logistic Regression
 lr = LogisticRegression(max_iter=1000, random_state=42, C=0.1)
 lr.fit(X_train_scaled, y_train_res)
 lr_prob = lr.predict_proba(X_test_scaled)[:, 1]
-print("✅ Logistic Regression trained")
+print("Logistic Regression trained")
 
-# ── Random Forest ─────────────────────────
+# Random Forest
 rf = RandomForestClassifier(
     n_estimators=200, max_depth=10,
     min_samples_leaf=30, random_state=42, n_jobs=-1
 )
 rf.fit(X_train_res, y_train_res)
 rf_prob = rf.predict_proba(X_test)[:, 1]
-print("✅ Random Forest trained")
+print("Random Forest trained")
 
-# ── XGBoost (improved hyperparameters) ───
+# XGBoost (improved hyperparameters)
 # Key changes vs v1:
 #   - n_estimators: 300→500  (more trees = better learning)
 #   - max_depth: 5→6         (slightly deeper trees)
@@ -139,12 +126,11 @@ xgb = XGBClassifier(
 )
 xgb.fit(X_train_res, y_train_res)
 xgb_prob = xgb.predict_proba(X_test)[:, 1]
-print("✅ XGBoost trained")
+print("XGBoost trained")
 
 
-# ─────────────────────────────────────────
 # STEP 5: FIND OPTIMAL THRESHOLD FOR XGBOOST
-# ─────────────────────────────────────────
+
 # Default threshold 0.5 is wrong for imbalanced data.
 # We scan all thresholds and pick the one with best F1.
 # This is the most important fix from v1.
@@ -180,12 +166,10 @@ ax.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "10_precision_recall_curve.png"), dpi=150)
 plt.close()
-print("✅ Saved: 10_precision_recall_curve.png")
+print("Saved: 10_precision_recall_curve.png")
 
-
-# ─────────────────────────────────────────
 # STEP 6: EVALUATE ALL MODELS
-# ─────────────────────────────────────────
+
 
 print("\n" + "=" * 55)
 print("STEP 6: EVALUATION RESULTS")
@@ -219,10 +203,7 @@ results.append(print_metrics("Random Forest",         y_test, rf_prob,  0.5))
 results.append(print_metrics("XGBoost (thresh=0.50)", y_test, xgb_prob, 0.5))
 results.append(print_metrics("XGBoost (optimised)",   y_test, xgb_prob, optimal_thresh))
 
-
-# ─────────────────────────────────────────
 # STEP 7: ROC CURVES
-# ─────────────────────────────────────────
 
 fig, ax = plt.subplots(figsize=(7, 6))
 for r, ls, lc in zip(
@@ -241,12 +222,9 @@ ax.legend(loc="lower right", fontsize=9)
 plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "08_roc_curves.png"), dpi=150)
 plt.close()
-print("\n✅ Saved: 08_roc_curves.png")
+print("\nSaved: 08_roc_curves.png")
 
-
-# ─────────────────────────────────────────
 # STEP 8: MODEL COMPARISON BAR CHART
-# ─────────────────────────────────────────
 
 plot_results = [results[0], results[1], results[3]]
 metrics      = ["auc", "precision", "recall", "f1"]
@@ -272,12 +250,9 @@ plt.suptitle("Model Comparison (XGBoost with Optimal Threshold)",
 plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "07_model_comparison.png"), dpi=150)
 plt.close()
-print("✅ Saved: 07_model_comparison.png")
+print("Saved: 07_model_comparison.png")
 
-
-# ─────────────────────────────────────────
 # STEP 9: XGBOOST FEATURE IMPORTANCE
-# ─────────────────────────────────────────
 
 importance_df = pd.DataFrame({
     "feature": X.columns,
@@ -292,12 +267,10 @@ ax.set_xlabel("Importance Score")
 plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "09_xgb_feature_importance.png"), dpi=150)
 plt.close()
-print("✅ Saved: 09_xgb_feature_importance.png")
+print("Saved: 09_xgb_feature_importance.png")
 
-
-# ─────────────────────────────────────────
 # STEP 10: CROSS-VALIDATION
-# ─────────────────────────────────────────
+
 # 5-fold CV gives a reliable, variance-aware AUC estimate.
 # A low std deviation means the model is stable across
 # different data splits — important for resume credibility.
@@ -312,10 +285,7 @@ print(f"   CV AUC scores : {[round(s, 4) for s in cv_scores]}")
 print(f"   Mean AUC      : {cv_scores.mean():.4f}")
 print(f"   Std deviation : {cv_scores.std():.4f}  (lower = more stable)")
 
-
-# ─────────────────────────────────────────
 # STEP 11: SAVE ALL ARTIFACTS
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 11: SAVING ARTIFACTS")
@@ -323,15 +293,15 @@ print("=" * 55)
 
 with open(os.path.join(MODELS_DIR, "xgboost_model.pkl"), "wb") as f:
     pickle.dump(xgb, f)
-print("✅ xgboost_model.pkl saved")
+print("xgboost_model.pkl saved")
 
 with open(os.path.join(MODELS_DIR, "optimal_threshold.pkl"), "wb") as f:
     pickle.dump(float(optimal_thresh), f)
-print(f"✅ optimal_threshold.pkl saved  (value: {optimal_thresh:.3f})")
+print(f"optimal_threshold.pkl saved  (value: {optimal_thresh:.3f})")
 
 with open(os.path.join(MODELS_DIR, "feature_columns.pkl"), "wb") as f:
     pickle.dump(list(X.columns), f)
-print("✅ feature_columns.pkl saved")
+print("feature_columns.pkl saved")
 
 report_rows = [
     {"model": r["name"], "threshold": r["threshold"],
@@ -342,14 +312,14 @@ report_rows = [
 pd.DataFrame(report_rows).to_csv(
     os.path.join(REPORTS_DIR, "model_comparison.csv"), index=False
 )
-print("✅ model_comparison.csv saved")
+print("model_comparison.csv saved")
 
-print("\n📊 Final Summary:")
+print("\nFinal Summary:")
 print(pd.DataFrame(report_rows).to_string(index=False))
 
 print(f"\n   5-Fold CV AUC: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
 print("\n" + "=" * 55)
-print("✅ STAGE 3 (IMPROVED) COMPLETE")
+print("STAGE 3 (IMPROVED) COMPLETE")
 print("=" * 55)
 print("\nNext Step → Run explain.py")

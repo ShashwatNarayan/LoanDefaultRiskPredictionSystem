@@ -1,7 +1,5 @@
 """
-=============================================================
 STAGE 2 — Feature Engineering
-=============================================================
 Goal: Transform the cleaned data from Stage 1 into a rich
 feature set ready for ML modeling.
 
@@ -9,9 +7,6 @@ We create:
   - Engineered numeric features (ratios, flags, interactions)
   - Encoded categorical features
   - A final feature matrix saved for Stage 3
-
-Run AFTER data_pipeline.py
-=============================================================
 """
 
 import pandas as pd
@@ -23,9 +18,8 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# ─────────────────────────────────────────
 # SETUP: PATHS
-# ─────────────────────────────────────────
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_PATH  = os.path.join(BASE_DIR, "data/processed/stage1_cleaned.csv")
@@ -36,21 +30,20 @@ print("=" * 55)
 print("STAGE 2: FEATURE ENGINEERING")
 print("=" * 55)
 
-# ─────────────────────────────────────────
+
 # STEP 1: LOAD CLEANED DATA FROM STAGE 1
-# ─────────────────────────────────────────
+
 # We read the CSV saved by data_pipeline.py.
 # All cleaning is already done — we only add here.
 
-print("\n📂 Loading stage1_cleaned.csv ...")
+print("\nLoading stage1_cleaned.csv ...")
 df = pd.read_csv(INPUT_PATH)
-print(f"✅ Loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
+print(f"Loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
 print(f"\nColumns available:\n{list(df.columns)}")
 
 
-# ─────────────────────────────────────────
 # STEP 2: ENGINEERED NUMERIC FEATURES
-# ─────────────────────────────────────────
+
 # These are the features that add real intelligence.
 # Each one represents a financial risk concept.
 
@@ -67,7 +60,7 @@ df["loan_to_income"] = (df["loan_amnt"] / df["annual_inc"]).round(4)
 # Cap extreme outliers at 99th percentile to avoid skewing the model
 cap_val = df["loan_to_income"].quantile(0.99)
 df["loan_to_income"] = df["loan_to_income"].clip(upper=cap_val)
-print("✅ loan_to_income created")
+print("loan_to_income created")
 
 
 
@@ -77,7 +70,7 @@ print("✅ loan_to_income created")
 if "fico_range_low" in df.columns and "fico_range_high" in df.columns:
     df["fico_score"] = (df["fico_range_low"] + df["fico_range_high"]) / 2
     df.drop(columns=["fico_range_low", "fico_range_high"], inplace=True)
-    print("✅ fico_score created (midpoint of range)")
+    print("fico_score created (midpoint of range)")
 
 # --- 2B: Installment to Income Ratio ---
 # Monthly payment burden vs monthly income.
@@ -88,7 +81,7 @@ df["installment_to_income"] = (
 ).round(4)
 cap_val = df["installment_to_income"].quantile(0.99)
 df["installment_to_income"] = df["installment_to_income"].clip(upper=cap_val)
-print("✅ installment_to_income created")
+print("installment_to_income created")
 
 # --- 2C: Revolving Utilization (already exists, but clean it) ---
 # revol_util is credit utilization % — how much of credit limit is used.
@@ -96,7 +89,7 @@ print("✅ installment_to_income created")
 # It already exists from Stage 1 but may need capping.
 if "revol_util" in df.columns:
     df["revol_util"] = df["revol_util"].clip(0, 100)
-    print("✅ revol_util capped between 0–100")
+    print("revol_util capped between 0–100")
 
 # --- 2D: Interest Rate as Risk Signal ---
 # LendingClub assigns higher rates to riskier borrowers.
@@ -107,7 +100,7 @@ df["int_rate_tier"] = pd.cut(
     bins=[0, 8, 13, 18, 25, 100],
     labels=[0, 1, 2, 3, 4]        # 0 = lowest risk tier
 ).astype(float)
-print("✅ int_rate_tier created (0=lowest, 4=highest)")
+print("int_rate_tier created (0=lowest, 4=highest)")
 
 # --- 2E: Credit Account Utilization ---
 # How many open accounts out of total ever opened?
@@ -116,13 +109,13 @@ df["open_acc_ratio"] = (
     df["open_acc"] / df["total_acc"].replace(0, np.nan)
 ).round(4)
 df["open_acc_ratio"].fillna(df["open_acc_ratio"].median(), inplace=True)
-print("✅ open_acc_ratio created")
+print(" open_acc_ratio created")
 
 # --- 2F: Delinquency Flag ---
 # Binary: has this borrower ever been delinquent in the last 2 years?
 # Past behavior is one of the strongest predictors of future default.
 df["has_delinquency"] = (df["delinq_2yrs"] > 0).astype(int)
-print("✅ has_delinquency flag created")
+print("has_delinquency flag created")
 
 # --- 2G: Public Record Flag ---
 # Any bankruptcies, tax liens, or judgements on record?
@@ -135,7 +128,7 @@ if "pub_rec" in df.columns:
 # seeking credit elsewhere = financial distress signal.
 if "inq_last_6mths" in df.columns:
     df["high_inq_flag"] = (df["inq_last_6mths"] > 2).astype(int)
-    print("✅ high_inq_flag created")
+    print("high_inq_flag created")
 
 # --- 2I: Loan Amount Tier ---
 # Bucket loan size — small/medium/large/very large
@@ -145,18 +138,17 @@ df["loan_amnt_tier"] = pd.cut(
     labels=[0, 1, 2, 3]
 ).astype(float)
 df["loan_amnt_tier"].fillna(1, inplace=True)
-print("✅ loan_amnt_tier created")
+print("loan_amnt_tier created")
 
 # --- 2J: Short Term Flag ---
 # 36-month loans are less risky than 60-month loans.
 # Borrowers who need 60 months to repay are more stretched.
 df["is_short_term"] = (df["term"] == 36).astype(int)
-print("✅ is_short_term flag created")
+print("is_short_term flag created")
 
 
-# ─────────────────────────────────────────
 # STEP 3: ENCODE CATEGORICAL FEATURES
-# ─────────────────────────────────────────
+
 # ML models need numbers, not text.
 # We convert text columns to numeric here.
 
@@ -173,7 +165,7 @@ if "grade" in df.columns:
     # Fill any unmapped values with median
     df["grade_encoded"].fillna(3, inplace=True)
     df.drop(columns=["grade"], inplace=True)
-    print("✅ grade → grade_encoded (ordinal 0–6)")
+    print("grade → grade_encoded (ordinal 0–6)")
 
 # --- 3B: Home Ownership → One-Hot Encoding ---
 # No natural order here — RENT is not "more than" OWN.
@@ -188,7 +180,7 @@ if "home_ownership" in df.columns:
     )
     df = pd.concat([df, home_dummies], axis=1)
     df.drop(columns=["home_ownership"], inplace=True)
-    print(f"✅ home_ownership → one-hot: {list(home_dummies.columns)}")
+    print(f"home_ownership → one-hot: {list(home_dummies.columns)}")
 
 # --- 3C: Purpose → One-Hot Encoding ---
 # Loan purpose matters — debt_consolidation has different risk
@@ -204,12 +196,11 @@ if "purpose" in df.columns:
     )
     df = pd.concat([df, purpose_dummies], axis=1)
     df.drop(columns=["purpose"], inplace=True)
-    print(f"✅ purpose → one-hot: {df.shape[1]} total columns now")
+    print(f"purpose → one-hot: {df.shape[1]} total columns now")
 
 
-# ─────────────────────────────────────────
+
 # STEP 4: DROP COLUMNS WE NO LONGER NEED
-# ─────────────────────────────────────────
 # Some columns were only useful for creating features.
 # Keeping them would cause data leakage or redundancy.
 
@@ -230,13 +221,10 @@ cols_to_drop = [
 
 existing_drop = [c for c in cols_to_drop if c in df.columns]
 df.drop(columns=existing_drop, inplace=True)
-print(f"✅ Dropped {len(existing_drop)} redundant columns")
-print(f"   Remaining columns: {df.shape[1]}")
+print(f"Dropped {len(existing_drop)} redundant columns")
+print(f"Remaining columns: {df.shape[1]}")
 
-
-# ─────────────────────────────────────────
 # STEP 5: FINAL FEATURE SUMMARY
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 5: FINAL FEATURE SUMMARY")
@@ -256,12 +244,11 @@ if nulls > 0:
     for col in df.columns:
         if df[col].isnull().sum() > 0:
             df[col].fillna(df[col].median(), inplace=True)
-    print("   ✅ Done")
+    print(" Done")
 
 
-# ─────────────────────────────────────────
+
 # STEP 6: CORRELATION ANALYSIS PLOT
-# ─────────────────────────────────────────
 # Which features correlate most with default?
 # This is a quick sanity check before modeling.
 
@@ -272,6 +259,7 @@ print("=" * 55)
 numeric_df = df.select_dtypes(include=[np.number])
 correlations = numeric_df.corr()["target"].drop("target").sort_values()
 
+#plotting graphs
 # Plot top 15 positive and negative correlations
 top_corr = pd.concat([correlations.head(10), correlations.tail(10)])
 
@@ -295,9 +283,7 @@ plt.close()
 print(f"✅ Saved: 05_feature_correlations.png")
 
 
-# ─────────────────────────────────────────
 # STEP 7: ENGINEERED FEATURE DISTRIBUTIONS
-# ─────────────────────────────────────────
 # Visual check: do our new features separate defaulters
 # from non-defaulters? They should show different distributions.
 
@@ -327,10 +313,7 @@ plt.savefig(save_path, dpi=150, bbox_inches="tight")
 plt.close()
 print(f"✅ Saved: 06_engineered_feature_distributions.png")
 
-
-# ─────────────────────────────────────────
 # STEP 8: SAVE FINAL FEATURE DATASET
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 8: SAVING FEATURE DATASET")

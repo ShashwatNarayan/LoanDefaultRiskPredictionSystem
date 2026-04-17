@@ -1,12 +1,7 @@
 """
-=============================================================
 STAGE 1 — Data Loading, Exploration & Initial Cleaning
-=============================================================
-Goal: Load the LendingClub dataset, understand its structure,
-and produce a clean, analysis-ready DataFrame.
-
-Run this file first before any modeling work.
-=============================================================
+Load the LendingClub dataset, understand its structure,
+and produce a clean, analysis-ready DataFrame
 """
 
 import pandas as pd
@@ -18,9 +13,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# ─────────────────────────────────────────
 # STEP 1: PROJECT FOLDER STRUCTURE SETUP
-# ─────────────────────────────────────────
 # Creates all necessary folders so your project is organized
 # from day one. Run this once.
 
@@ -41,10 +34,7 @@ for folder in folders:
 
 print("✅ Project folder structure created.\n")
 
-
-# ─────────────────────────────────────────
 # STEP 2: LOAD THE DATASET
-# ─────────────────────────────────────────
 # INSTRUCTIONS TO GET THE DATA:
 #   1. Go to: https://www.kaggle.com/datasets/wordsforthewise/lending-club
 #   2. Download "accepted_2007_to_2018Q4.csv.gz"
@@ -53,9 +43,7 @@ print("✅ Project folder structure created.\n")
 
 RAW_DATA_PATH = os.path.join(BASE_DIR, "data/raw/accepted_2007_to_2018Q4.csv")
 
-# We use nrows=150000 to keep it manageable on a laptop.
-# Remove nrows to use the full dataset (2.2M rows, needs 8GB+ RAM).
-print("📂 Loading dataset...")
+print("Loading dataset...")
 
 try:
     df = pd.read_csv(
@@ -63,16 +51,14 @@ try:
         nrows=150_000,
         low_memory=False
     )
-    print(f"✅ Dataset loaded: {df.shape[0]:,} rows × {df.shape[1]} columns\n")
+    print(f"Dataset loaded: {df.shape[0]:,} rows × {df.shape[1]} columns\n")
 except FileNotFoundError:
-    print("❌ File not found. Please download the dataset from Kaggle.")
+    print("File not found. Please download the dataset from Kaggle.")
     print(f"   Expected path: {RAW_DATA_PATH}")
     raise
 
-
-# ─────────────────────────────────────────
 # STEP 3: INITIAL EXPLORATION
-# ─────────────────────────────────────────
+
 # Before cleaning anything, we look at what we have.
 # This is EDA — Exploratory Data Analysis.
 
@@ -80,17 +66,15 @@ print("=" * 55)
 print("STEP 3: INITIAL EXPLORATION")
 print("=" * 55)
 
-print(f"\n📊 Shape: {df.shape}")
-print(f"\n📋 Column names (first 30):\n{list(df.columns[:30])}")
-print(f"\n🔍 Data types:\n{df.dtypes.value_counts()}")
-print(f"\n🕳️  Missing values (top 20 columns):")
+print(f"\nShape: {df.shape}")
+print(f"\nColumn names (first 30):\n{list(df.columns[:30])}")
+print(f"\nData types:\n{df.dtypes.value_counts()}")
+print(f"\nMissing values (top 20 columns):")
 missing = df.isnull().mean().sort_values(ascending=False)
 print(missing[missing > 0].head(20).to_string())
 
 
-# ─────────────────────────────────────────
 # STEP 4: SELECT RELEVANT COLUMNS
-# ─────────────────────────────────────────
 # The raw dataset has 150+ columns. We keep only
 # what's meaningful for credit risk modeling.
 
@@ -135,15 +119,13 @@ SELECTED_COLUMNS = [
 available_cols = [c for c in SELECTED_COLUMNS if c in df.columns]
 df = df[available_cols].copy()
 
-print(f"✅ Kept {len(available_cols)} columns out of {len(SELECTED_COLUMNS)} requested.")
+print(f"Kept {len(available_cols)} columns out of {len(SELECTED_COLUMNS)} requested.")
 if len(available_cols) < len(SELECTED_COLUMNS):
     missing_cols = set(SELECTED_COLUMNS) - set(available_cols)
     print(f"   Missing columns (not in dataset): {missing_cols}")
 
 
-# ─────────────────────────────────────────
 # STEP 5: CREATE THE TARGET VARIABLE
-# ─────────────────────────────────────────
 # loan_status has many categories. We convert it
 # to binary: 1 = Default, 0 = No Default.
 
@@ -172,14 +154,11 @@ df = df[df["loan_status"] != "Current"].copy()
 df.drop(columns=["loan_status"], inplace=True)
 
 default_rate = df["target"].mean()
-print(f"\n✅ Target created.")
+print(f"\nTarget created.")
 print(f"   Default rate: {default_rate:.1%}")
 print(f"   Class distribution:\n{df['target'].value_counts().to_string()}")
 
-
-# ─────────────────────────────────────────
 # STEP 6: CLEAN MESSY COLUMNS
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 6: CLEANING MESSY COLUMNS")
@@ -188,17 +167,17 @@ print("=" * 55)
 # --- int_rate: "13.56%" → 13.56 ---
 if df["int_rate"].dtype == object:
     df["int_rate"] = df["int_rate"].str.replace("%", "").astype(float)
-    print("✅ int_rate: stripped '%' and converted to float")
+    print("int_rate: stripped '%' and converted to float")
 
 # --- revol_util: "45.6%" → 45.6 ---
 if "revol_util" in df.columns and df["revol_util"].dtype == object:
     df["revol_util"] = df["revol_util"].str.replace("%", "").astype(float)
-    print("✅ revol_util: stripped '%' and converted to float")
+    print("revol_util: stripped '%' and converted to float")
 
 # --- term: " 36 months" → 36 ---
 if df["term"].dtype == object:
     df["term"] = df["term"].str.extract(r"(\d+)").astype(float)
-    print("✅ term: extracted numeric value")
+    print("term: extracted numeric value")
 
 # --- emp_length: "10+ years" → 10, "< 1 year" → 0 ---
 def parse_emp_length(val):
@@ -213,7 +192,7 @@ def parse_emp_length(val):
     return float(digits) if digits else np.nan
 
 df["emp_length"] = df["emp_length"].apply(parse_emp_length)
-print("✅ emp_length: parsed to numeric years")
+print("emp_length: parsed to numeric years")
 
 # --- earliest_cr_line: "Jan-2005" → credit history in years ---
 if "earliest_cr_line" in df.columns:
@@ -225,12 +204,9 @@ if "earliest_cr_line" in df.columns:
         (reference_date - df["earliest_cr_line"]).dt.days / 365.25
     ).round(1)
     df.drop(columns=["earliest_cr_line"], inplace=True)
-    print("✅ earliest_cr_line: converted to credit_history_years")
+    print("earliest_cr_line: converted to credit_history_years")
 
-
-# ─────────────────────────────────────────
 # STEP 7: HANDLE MISSING VALUES
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 7: MISSING VALUE TREATMENT")
@@ -260,9 +236,7 @@ remaining = df.isnull().sum().sum()
 print(f"   Total remaining nulls: {remaining}")
 
 
-# ─────────────────────────────────────────
 # STEP 8: EXPLORATORY PLOTS
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 8: GENERATING EXPLORATORY PLOTS")
@@ -282,7 +256,7 @@ for i, v in enumerate(counts.values):
 plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "01_class_distribution.png"), dpi=150)
 plt.close()
-print("✅ Saved: 01_class_distribution.png")
+print("Saved: 01_class_distribution.png")
 
 # Plot 2: Default rate by loan grade
 if "grade" in df.columns:
@@ -301,7 +275,7 @@ if "grade" in df.columns:
     plt.tight_layout()
     plt.savefig(os.path.join(PLOTS_DIR, "02_default_by_grade.png"), dpi=150)
     plt.close()
-    print("✅ Saved: 02_default_by_grade.png")
+    print("Saved: 02_default_by_grade.png")
 
 # Plot 3: Loan amount distribution by target
 fig, ax = plt.subplots(figsize=(8, 4))
@@ -316,7 +290,7 @@ ax.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(PLOTS_DIR, "03_loan_amount_distribution.png"), dpi=150)
 plt.close()
-print("✅ Saved: 03_loan_amount_distribution.png")
+print("Saved: 03_loan_amount_distribution.png")
 
 # Plot 4: DTI distribution
 if "dti" in df.columns:
@@ -332,12 +306,11 @@ if "dti" in df.columns:
     plt.tight_layout()
     plt.savefig(os.path.join(PLOTS_DIR, "04_dti_distribution.png"), dpi=150)
     plt.close()
-    print("✅ Saved: 04_dti_distribution.png")
+    print("Saved: 04_dti_distribution.png")
 
 
-# ─────────────────────────────────────────
+
 # STEP 9: SAVE CLEANED DATA
-# ─────────────────────────────────────────
 
 print("\n" + "=" * 55)
 print("STEP 9: SAVING CLEANED DATA")
@@ -346,11 +319,11 @@ print("=" * 55)
 PROCESSED_PATH = os.path.join(BASE_DIR, "data/processed/stage1_cleaned.csv")
 df.to_csv(PROCESSED_PATH, index=False)
 
-print(f"✅ Cleaned data saved to: data/processed/stage1_cleaned.csv")
+print(f"Cleaned data saved to: data/processed/stage1_cleaned.csv")
 print(f"   Final shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
 print(f"   Target column: 'target'  (1 = Default, 0 = No Default)")
 
 print("\n" + "=" * 55)
-print("✅ STAGE 1 COMPLETE")
+print("STAGE 1 COMPLETE")
 print("=" * 55)
 print("\nNext Step → Run stage2_feature_engineering.py")

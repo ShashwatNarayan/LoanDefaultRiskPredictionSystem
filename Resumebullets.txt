@@ -1,0 +1,83 @@
+=============================================================
+RESUME BULLETS — Loan Default Risk Prediction System
+=============================================================
+
+REPLACE: VoiceDesk entry with the following.
+
+--------------------------------------------------------------
+PROJECT TITLE LINE (on resume):
+--------------------------------------------------------------
+
+Loan Default Risk Prediction System | Python, XGBoost, SHAP, Pandas, scikit-learn
+
+
+--------------------------------------------------------------
+BULLET POINTS (pick 4 of these 6 — all are accurate):
+--------------------------------------------------------------
+
+• Engineered 10 domain-specific financial features (loan-to-income ratio,
+  installment burden, interest rate tiers, delinquency flags) on 133k real
+  LendingClub records, validated via SHAP analysis as top default predictors.
+
+• Trained and compared Logistic Regression, Random Forest, and XGBoost models;
+  applied threshold optimisation (0.50 → 0.228) improving default recall from
+  17.8% to 62.8%, catching 954 additional defaulters per 26k predictions.
+
+• Addressed 80/20 class imbalance using SMOTE applied exclusively on training
+  data, balancing 84,860 synthetic minority samples without leaking into
+  evaluation; confirmed stability via 5-fold CV AUC of 0.7375 ± 0.0048.
+
+• Implemented SHAP TreeExplainer on 2,000-row representative sample to generate
+  per-borrower risk explanations, identifying interest rate and loan purpose as
+  dominant default predictors with SHAP values ranging from -2.0 to +0.60.
+
+• Built a 4-stage end-to-end ML pipeline (data cleaning → feature engineering
+  → model training → explainability) producing 10 automated visualisations
+  and saved model artifacts for reproducible deployment.
+
+• Designed production-oriented decision engine with calibrated probability
+  output, risk categorisation (Low / Medium / High), and SHAP-based factor
+  explanation — mirroring how real bank credit scoring systems operate.
+
+
+--------------------------------------------------------------
+RECOMMENDED 4 (best combination for AI/ML roles):
+--------------------------------------------------------------
+
+Use bullets 1, 2, 3, 4. They cover:
+  - Feature engineering (shows domain thinking)
+  - Model evaluation + business impact (shows you understand stakes)
+  - Imbalance handling + validation rigor (shows ML maturity)
+  - SHAP explainability (shows production ML awareness)
+
+
+--------------------------------------------------------------
+HOW TO PRESENT IN INTERVIEWS:
+--------------------------------------------------------------
+
+"The project predicts default probability — not just yes/no — on real
+LendingClub data. The key technical challenge was that the default 0.5
+threshold was completely wrong for this imbalanced dataset, only catching
+18% of actual defaulters. I tuned the threshold using the Precision-Recall
+curve to 0.228, which pushed recall to 63%. I also added SHAP explainability
+so you can see exactly which features drove each individual prediction —
+which is what banks legally need to justify credit decisions."
+
+This answer covers: problem framing, technical challenge, your solution,
+business impact, and why it matters in the real world. ~30 seconds.
+
+
+--------------------------------------------------------------
+NUMBERS TO REMEMBER:
+--------------------------------------------------------------
+
+133,018 rows of real data
+30 features (10 engineered)
+3 models compared
+0.7375 ± 0.0048  — 5-fold CV AUC
+0.228            — optimal threshold (vs default 0.5)
+62.8%            — recall after tuning (was 17.8%)
+954              — additional defaulters caught per 26k predictions
+84,860           — SMOTE synthetic samples
+2,000            — SHAP sample size
+6                — SHAP visualisation outputs
